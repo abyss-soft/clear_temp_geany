@@ -4,55 +4,44 @@ const ini = require("ini");
 const readline = require("readline");
 const { table } = require("console");
 
-// путь до файла конфигурации geany плагина saveactions
+// path to 'saveactions' plugin geany configuration file
 const geanyAutoSavePlagin =
   "/home/alex/.config/geany/plugins/saveactions/saveactions.conf";
 
-// путь до конфига geany
+// path to geany config
 const geanyConfig = "/home/alex/.config/geany/geany.conf";
 
-// массив файлов, которые открыты в geany
+// array of files that are open in geany
 const fileOpenInGeany = [];
 
-// создаем поток для чтения конфиг-файла, в котором есть список текущих открытых файлов в редакторе
+// create a stream for reading the config file, which has a list of currently open files in the editor
 const instream = fs.createReadStream(geanyConfig);
 
-// считываем путь до временного каталога
+// read the path to the temporary directory
 const configAutoSavePath = ini.parse(
   fs.readFileSync(geanyAutoSavePlagin, "utf-8")
 );
 
-// создаем интерфейс для файла
+// create an interface for the file
 const readInterface = readline.createInterface({
   input: instream,
 });
 
-// читаем построчно поток
-// если находим, что строка содержит "FILE_NAME", значит в строке есть открытый файл в geany
+// read the stream line by line
+// if we find that the string contains "FILE_NAME", then the string has an open file in geany
 readInterface.on("line", function (line) {
   if (line.includes("FILE_NAME")) {
-    
-    // let tmpLine = line.slice(0, line.length - 4); // уберем последнии 4 символа
-    // let startPosition = tmpLine.lastIndexOf(";"); // ищем последний символ ";", который находится перед именем файла открытым в редакторе
-    // if (startPosition != -1) {
-      // если позиция найдена, получаем имя файла, который существует в редакторе
-      // let fileNameWithExistEditor = tmpLine.slice(startPosition + 1);
-      // fileNameWithExistEditor = fileNameWithExistEditor.split("%2F").join("/");
+    // convert to normal and get the file name with the path from the configuration line
+    let stringSplit = line.split("%2F").join("/").split(";");
+    let fileName = stringSplit[stringSplit.length - 3];
 
-// преобразуем к нормальному виду и получаем имя файла с путем из строки конфигурации
-      let stringSplit = line.split("%2F").join("/").split(';');
-      let fileName = stringSplit[stringSplit.length-3];
-
-
-      fileOpenInGeany.push(fileName);
-    // }
+    fileOpenInGeany.push(fileName);
   }
 });
 
-// путь до каталого временных файлов
-//console.log(configAutoSavePath.instantsave.target_dir);
+// configAutoSavePath.instantsave.target_dir - path to temporary files directory
 
-// функция получения всех файлов во временной папки
+// function to get all files in temporary folder
 const getFiles = function (dir, files_) {
   files_ = files_ || [];
   let files = fs.readdirSync(dir);
@@ -67,7 +56,7 @@ const getFiles = function (dir, files_) {
   return files_;
 };
 
-// функция удаления файла
+// file delete function
 function deleteFile(filePath) {
   try {
     fs.unlinkSync(filePath);
@@ -77,27 +66,24 @@ function deleteFile(filePath) {
   }
 }
 
-// если дошли до конца файла, то закрываем поток и обрабатываем массив с нашими открытыми в редакторе файлами
+// if we reach the end of the file, then we close the stream and process the array with our files open in the editor
 instream.on("end", () => {
-  readInterface.close(); // тут закрыли поток и уже есть все файлы открытые в реакторе
-  
-  // получаем все файлы во временной папке
+  readInterface.close(); // the stream was closed here and there are already all files open in the reactor
+
+  // get all files in temporary folder
   const allFilesInTempDirectory = getFiles(
     configAutoSavePath.instantsave.target_dir
   );
-  // console.table(allFilesInTempDirectory);
-  //fileOpenInGeany
-  // console.table(fileOpenInGeany);
+
   const filesForDelete = [];
-  // выбираем файлы которые НЕ открыты в редакторе
+  // select files that are NOT open in the editor
   allFilesInTempDirectory.forEach((line) => {
     if (!fileOpenInGeany.includes(line)) {
       filesForDelete.push(line);
     }
   });
-  // console.table(filesForDelete);
 
-  // удаляем все файлы НЕ открытые в редакторе
+  // delete all files NOT open in the editor
   filesForDelete.forEach((fileForDel) => {
     deleteFile(fileForDel);
   });
