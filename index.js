@@ -31,21 +31,26 @@ const readInterface = readline.createInterface({
 // если находим, что строка содержит "FILE_NAME", значит в строке есть открытый файл в geany
 readInterface.on("line", function (line) {
   if (line.includes("FILE_NAME")) {
-    // преобразуем к нормальному виду
-    let tmpLine = line.slice(0, line.length - 4);
-    let startPosition = tmpLine.lastIndexOf(";");
-    if (startPosition != -1) {
+    
+    // let tmpLine = line.slice(0, line.length - 4); // уберем последнии 4 символа
+    // let startPosition = tmpLine.lastIndexOf(";"); // ищем последний символ ";", который находится перед именем файла открытым в редакторе
+    // if (startPosition != -1) {
       // если позиция найдена, получаем имя файла, который существует в редакторе
-      let fileNameWithExistEditor = tmpLine.slice(startPosition + 1);
-      fileNameWithExistEditor = fileNameWithExistEditor.split("%2F").join("/");
+      // let fileNameWithExistEditor = tmpLine.slice(startPosition + 1);
+      // fileNameWithExistEditor = fileNameWithExistEditor.split("%2F").join("/");
 
-      fileOpenInGeany.push(fileNameWithExistEditor);
-    }
+// преобразуем к нормальному виду и получаем имя файла с путем из строки конфигурации
+      let stringSplit = line.split("%2F").join("/").split(';');
+      let fileName = stringSplit[stringSplit.length-3];
+
+
+      fileOpenInGeany.push(fileName);
+    // }
   }
 });
 
 // путь до каталого временных файлов
-console.log(configAutoSavePath.instantsave.target_dir);
+//console.log(configAutoSavePath.instantsave.target_dir);
 
 // функция получения всех файлов во временной папки
 const getFiles = function (dir, files_) {
@@ -72,29 +77,28 @@ function deleteFile(filePath) {
   }
 }
 
-
 // если дошли до конца файла, то закрываем поток и обрабатываем массив с нашими открытыми в редакторе файлами
 instream.on("end", () => {
-  console.log("END");
-  readInterface.close();
-  // тут закрыли поток и уже есть все файлы открытые в реакторе
-
+  readInterface.close(); // тут закрыли поток и уже есть все файлы открытые в реакторе
+  
   // получаем все файлы во временной папке
-  const allFilesInTempDirectory = getFiles(configAutoSavePath.instantsave.target_dir);
-  console.table(allFilesInTempDirectory);
+  const allFilesInTempDirectory = getFiles(
+    configAutoSavePath.instantsave.target_dir
+  );
+  // console.table(allFilesInTempDirectory);
   //fileOpenInGeany
-  console.table(fileOpenInGeany);
+  // console.table(fileOpenInGeany);
   const filesForDelete = [];
   // выбираем файлы которые НЕ открыты в редакторе
   allFilesInTempDirectory.forEach((line) => {
-    if(!fileOpenInGeany.includes(line)) {
-      filesForDelete.push(line)
+    if (!fileOpenInGeany.includes(line)) {
+      filesForDelete.push(line);
     }
   });
-  console.table(filesForDelete);
+  // console.table(filesForDelete);
 
   // удаляем все файлы НЕ открытые в редакторе
   filesForDelete.forEach((fileForDel) => {
     deleteFile(fileForDel);
-  })
+  });
 });
