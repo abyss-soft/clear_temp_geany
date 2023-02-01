@@ -1,0 +1,14 @@
+{
+  "name": "Clear_temp_Geany",
+  "version": "1.0.0",
+  "description": "Clear temp Geany",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index"
+  },
+  "author": "https://github.com/abyss-soft",
+  "license": "ISC",
+  "dependencies": {
+    "ini": "^3.0.1"
+  }
+}
